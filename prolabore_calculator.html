@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Pró-Labore</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .content { padding: 30px; }
+        .section { margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #667eea; }
+        .section h2 { color: #667eea; margin-bottom: 20px; font-size: 20px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-weight: bold; margin-bottom: 5px; color: #333; font-size: 14px; }
+        .form-group input, .form-group select { padding: 10px; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 14px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+        .desconto-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 2px solid #e0e0e0; display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: end; }
+        .desconto-item select, .desconto-item input { padding: 10px; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 14px; }
+        .btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin: 10px 5px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
+        .btn-small { padding: 10px 15px; font-size: 14px; margin: 0; }
+        .btn-remove { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .btn-add { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .btn-secondary { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .result { background: white; padding: 20px; border-radius: 10px; border: 2px solid #667eea; }
+        .result-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #e0e0e0; }
+        .result-item:last-child { border-bottom: none; }
+        .result-item.total { font-weight: bold; font-size: 18px; color: #667eea; border-top: 2px solid #667eea; margin-top: 10px; padding-top: 15px; }
+        .info-box { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 15px; font-size: 13px; }
+        .info-box.warning { background: #fff3e0; }
+        .recibo { background: white; padding: 40px; max-width: 800px; margin: 20px auto; border: 2px solid #333; display: none; }
+        .recibo-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+        .recibo-header h1 { color: #333; font-size: 24px; margin-bottom: 10px; }
+        .recibo-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; font-size: 13px; }
+        .recibo-info div { padding: 5px; }
+        .recibo-info strong { color: #333; }
+        .recibo-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px; }
+        .recibo-table th, .recibo-table td { border: 1px solid #333; padding: 8px; text-align: left; }
+        .recibo-table th { background: #f0f0f0; font-weight: bold; }
+        .recibo-table td.valor { text-align: right; }
+        .recibo-total { background: #f0f0f0; font-weight: bold; }
+        .recibo-footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #333; }
+        .tabela-rodape { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 11px; }
+        .tabela-rodape th, .tabela-rodape td { border: 1px solid #333; padding: 8px; text-align: center; }
+        .tabela-rodape th { font-weight: bold; background: #f0f0f0; }
+        .declaracao { margin: 30px 0 20px 0; padding: 15px; text-align: center; font-size: 12px; font-weight: bold; }
+        .assinatura { text-align: center; margin-top: 30px; }
+        .assinatura-linha { border-top: 1px solid #333; margin-top: 40px; padding-top: 10px; }
+        .button-group { text-align: center; margin-top: 20px; }
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; border-radius: 0; }
+            .header, .content, .button-group, .btn { display: none !important; }
+            .recibo { display: block !important; border: 2px solid #333; margin: 0; padding: 40px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Calculadora de Pró-Labore</h1>
+            <p>Sistema completo de cálculo e geração de recibo</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>Dados da Empresa</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nome da Empresa</label>
+                        <input type="text" id="nomeEmpresa" placeholder="Ex: Empresa XYZ Ltda">
+                    </div>
+                    <div class="form-group">
+                        <label>CNPJ</label>
+                        <input type="text" id="cnpj" placeholder="00.000.000/0000-00">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Dados do Colaborador</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nome do Colaborador</label>
+                        <input type="text" id="nomeColaborador" placeholder="Nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label>PIS/NIT</label>
+                        <input type="text" id="pis" placeholder="000.00000.00-0">
+                    </div>
+                    <div class="form-group">
+                        <label>CBO - Cargo</label>
+                        <input type="text" id="cbo" placeholder="Ex: 1234-56 - Administrador">
+                    </div>
+                    <div class="form-group">
+                        <label>Data de Admissão</label>
+                        <input type="date" id="dataAdmissao">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Cálculo do Pró-Labore</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Salário Bruto (R$)</label>
+                        <input type="number" id="salarioBruto" placeholder="0.00" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Dependentes IRPF</label>
+                        <input type="number" id="dependentes" placeholder="0" value="0">
+                    </div>
+                </div>
+                
+                <div style="margin-top: 25px;">
+                    <h3 style="color: #667eea; margin-bottom: 15px; font-size: 18px;">Descontos</h3>
+                    <div id="descontosContainer"></div>
+                    <button class="btn btn-add btn-small" id="btnAddDesconto">+ Adicionar Desconto</button>
+                </div>
+                
+                <div class="info-box">
+                    <strong>📋 Tabela INSS 2025 (Cálculo Progressivo):</strong><br>
+                    • Até R$ 1.412,00 → 7,5%<br>
+                    • De R$ 1.412,01 a R$ 2.666,68 → 9%<br>
+                    • De R$ 2.666,69 a R$ 4.000,03 → 12%<br>
+                    • De R$ 4.000,04 a R$ 7.786,02 → 14%<br>
+                    <em>* Teto máximo: R$ 908,86</em>
+                </div>
+                
+                <div class="info-box warning">
+                    <strong>📋 Tabela IRPF 2025 (Cálculo Progressivo):</strong><br>
+                    • Até R$ 2.259,20 → Isento<br>
+                    • De R$ 2.259,21 a R$ 2.826,65 → 7,5%<br>
+                    • De R$ 2.826,66 a R$ 3.751,05 → 15%<br>
+                    • De R$ 3.751,06 a R$ 4.664,68 → 22,5%<br>
+                    • Acima de R$ 4.664,68 → 27,5%<br>
+                    <em>* Dedução por dependente: R$ 189,59</em>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn" id="btnCalcular">Calcular Pró-Labore</button>
+                <button class="btn btn-secondary" id="btnGerarRecibo">Gerar Recibo</button>
+                <button class="btn" id="btnImprimir">Imprimir Recibo</button>
+            </div>
+            
+            <div id="resultado" class="section" style="display:none;">
+                <h2>Resultado do Cálculo</h2>
+                <div class="result" id="resultadoCalculo"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="recibo" id="recibo">
+        <div class="recibo-header">
+            <h1>RECIBO DE PAGAMENTO DE PRÓ-LABORE</h1>
+            <p id="reciboMesAno"></p>
+        </div>
+        
+        <div class="recibo-info">
+            <div><strong>Empresa:</strong> <span id="reciboEmpresa"></span></div>
+            <div><strong>CNPJ:</strong> <span id="reciboCNPJ"></span></div>
+            <div><strong>Colaborador:</strong> <span id="reciboColaborador"></span></div>
+            <div><strong>PIS/NIT:</strong> <span id="reciboPIS"></span></div>
+            <div><strong>CBO - Cargo:</strong> <span id="reciboCBO"></span></div>
+            <div><strong>Admissão:</strong> <span id="reciboAdmissao"></span></div>
+        </div>
+        
+        <table class="recibo-table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Referência</th>
+                    <th>Proventos</th>
+                    <th>Descontos</th>
+                </tr>
+            </thead>
+            <tbody id="reciboTabela"></tbody>
+        </table>
+        
+        <div class="recibo-footer">
+            <table class="tabela-rodape">
+                <tr>
+                    <th>Salário Base</th>
+                    <th>Salário Contribuição INSS</th>
+                    <th>Depend. IRPF</th>
+                    <th>Base Cálculo IRPF</th>
+                    <th>FGTS Mês</th>
+                    <th>Salário FGTS</th>
+                </tr>
+                <tr>
+                    <td id="reciboSalarioBase"></td>
+                    <td id="reciboSalarioINSS"></td>
+                    <td id="reciboDependentes"></td>
+                    <td id="reciboBaseIRPF"></td>
+                    <td id="reciboFGTS"></td>
+                    <td id="reciboSalarioFGTS"></td>
+                </tr>
+            </table>
+            
+            <div class="declaracao">
+                Declaro ter recebido a importância líquida discriminada neste recibo.
+            </div>
+            
+            <div class="assinatura">
+                <p><strong>Data:</strong> <span id="reciboData"></span></p>
+                <div class="assinatura-linha">
+                    Assinatura do Colaborador
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+const app = {
+    dadosCalculados: {},
+    descontos: [],
+    descontoIdCounter: 0,
+    tabelaINSS: [
+        { limite: 1412.00, aliquota: 7.5 },
+        { limite: 2666.68, aliquota: 9.0 },
+        { limite: 4000.03, aliquota: 12.0 },
+        { limite: 7786.02, aliquota: 14.0 }
+    ],
+    tabelaIRPF: [
+        { limite: 2259.20, aliquota: 0, parcela: 0 },
+        { limite: 2826.65, aliquota: 7.5, parcela: 169.44 },
+        { limite: 3751.05, aliquota: 15.0, parcela: 381.44 },
+        { limite: 4664.68, aliquota: 22.5, parcela: 662.77 },
+        { limite: Infinity, aliquota: 27.5, parcela: 896.00 }
+    ],
+    deducaoDependente: 189.59,
+    tiposDesconto: {
+        'inss_auto': { nome: 'INSS (Automático)', codigo: '101', temValor: false },
+        'inss_manual': { nome: 'INSS (Manual %)', codigo: '101', temValor: true, tipo: 'percentual' },
+        'irpf_auto': { nome: 'IRPF (Automático)', codigo: '104', temValor: false },
+        'irpf_manual': { nome: 'IRPF (Manual R$)', codigo: '104', temValor: true, tipo: 'valor' },
+        'pensao_valor': { nome: 'Pensão Alimentícia (R$)', codigo: '102', temValor: true, tipo: 'valor' },
+        'pensao_perc': { nome: 'Pensão Alimentícia (%)', codigo: '102', temValor: true, tipo: 'percentual' },
+        'plano_saude': { nome: 'Plano de Saúde', codigo: '103', temValor: true, tipo: 'valor' },
+        'vale_transporte': { nome: 'Vale Transporte', codigo: '105', temValor: true, tipo: 'valor' },
+        'vale_refeicao': { nome: 'Vale Refeição', codigo: '106', temValor: true, tipo: 'valor' },
+        'adiantamento': { nome: 'Adiantamento Salarial', codigo: '107', temValor: true, tipo: 'valor' },
+        'outros': { nome: 'Outros Descontos', codigo: '199', temValor: true, tipo: 'valor' }
+    }
+};
+
+function formatarMoeda(valor) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+}
+
+function calcularINSSProgressivo(salario) {
+    let inssTotal = 0, salarioRestante = salario, faixaAnterior = 0;
+    for (let i = 0; i < app.tabelaINSS.length; i++) {
+        const faixa = app.tabelaINSS[i];
+        const limiteFaixa = faixa.limite - faixaAnterior;
+        if (salarioRestante > 0) {
+            const valorFaixa = Math.min(salarioRestante, limiteFaixa);
+            inssTotal += (valorFaixa * faixa.aliquota) / 100;
+            salarioRestante -= valorFaixa;
+            faixaAnterior = faixa.limite;
+        }
+        if (salarioRestante <= 0) break;
+    }
+    return Math.min(inssTotal, 908.86);
+}
+
+function calcularIRPFProgressivo(baseCalculo, dependentes) {
+    const baseCalculoFinal = baseCalculo - (dependentes * app.deducaoDependente);
+    if (baseCalculoFinal <= 0) return 0;
+    let faixaAplicavel = app.tabelaIRPF[0];
+    for (let i = 0; i < app.tabelaIRPF.length; i++) {
+        if (baseCalculoFinal <= app.tabelaIRPF[i].limite) {
+            faixaAplicavel = app.tabelaIRPF[i];
+            break;
+        }
+    }
+    return Math.max((baseCalculoFinal * faixaAplicavel.aliquota / 100) - faixaAplicavel.parcela, 0);
+}
+
+function adicionarDesconto() {
+    const id = app.descontoIdCounter++;
+    app.descontos.push({ id, tipo: 'inss_auto', valor: 0 });
+    renderizarDescontos();
+}
+
+function removerDesconto(id) {
+    app.descontos = app.descontos.filter(d => d.id !== id);
+    renderizarDescontos();
+}
+
+function atualizarTipoDesconto(id, tipo) {
+    const desconto = app.descontos.find(d => d.id === id);
+    if (desconto) {
+        desconto.tipo = tipo;
+        desconto.valor = 0;
+        renderizarDescontos();
+    }
+}
+
+function atualizarValorDesconto(id, valor) {
+    const desconto = app.descontos.find(d => d.id === id);
+    if (desconto) desconto.valor = parseFloat(valor) || 0;
+}
+
+function renderizarDescontos() {
+    const container = document.getElementById('descontosContainer');
+    if (app.descontos.length === 0) {
+        container.innerHTML = '<p style="color: #666; font-style: italic;">Nenhum desconto adicionado.</p>';
+        return;
+    }
+    container.innerHTML = app.descontos.map(d => {
+        const tipoInfo = app.tiposDesconto[d.tipo];
+        const campoValor = tipoInfo.temValor ? 
+            '<div><label style="font-size: 12px; color: #666;">Valor ' + (tipoInfo.tipo === 'percentual' ? '(%)' : '(R$)') + '</label><input type="number" value="' + d.valor + '" step="0.01" placeholder="0.00" onchange="atualizarValorDesconto(' + d.id + ', this.value)"></div>' : 
+            '<div></div>';
+        
+        let optionsHTML = '';
+        for (let key in app.tiposDesconto) {
+            optionsHTML += '<option value="' + key + '"' + (d.tipo === key ? ' selected' : '') + '>' + app.tiposDesconto[key].nome + '</option>';
+        }
+        
+        return '<div class="desconto-item"><div><label style="font-size: 12px; color: #666;">Tipo de Desconto</label><select onchange="atualizarTipoDesconto(' + d.id + ', this.value)">' + optionsHTML + '</select></div>' + campoValor + '<div><label style="font-size: 12px; color: transparent;">-</label><button class="btn btn-remove btn-small" onclick="removerDesconto(' + d.id + ')">🗑️ Remover</button></div></div>';
+    }).join('');
+}
+
+function calcular() {
+    const salarioBruto = parseFloat(document.getElementById('salarioBruto').value) || 0;
+    const dependentes = parseInt(document.getElementById('dependentes').value) || 0;
+    if (salarioBruto === 0) {
+        alert('Por favor, informe o salário bruto!');
+        return;
+    }
+    let inssValor = 0, irpfValor = 0, outrosDescontos = [];
+    app.descontos.forEach(d => {
+        const tipoInfo = app.tiposDesconto[d.tipo];
+        let valorCalculado = 0, referencia = '';
+        switch(d.tipo) {
+            case 'inss_auto':
+                valorCalculado = calcularINSSProgressivo(salarioBruto);
+                referencia = 'Progressivo';
+                inssValor = valorCalculado;
+                break;
+            case 'inss_manual':
+                valorCalculado = (salarioBruto * d.valor) / 100;
+                referencia = d.valor + '%';
+                inssValor = valorCalculado;
+                break;
+            case 'irpf_auto':
+                valorCalculado = calcularIRPFProgressivo(salarioBruto - inssValor, dependentes);
+                referencia = 'Progressivo';
+                irpfValor = valorCalculado;
+                break;
+            case 'irpf_manual':
+                valorCalculado = d.valor;
+                referencia = 'Manual';
+                irpfValor = valorCalculado;
+                break;
+            case 'pensao_valor':
+                valorCalculado = d.valor;
+                referencia = 'Valor Fixo';
+                break;
+            case 'pensao_perc':
+                valorCalculado = (salarioBruto * d.valor) / 100;
+                referencia = d.valor + '%';
+                break;
+            default:
+                valorCalculado = d.valor;
+                referencia = 'Fixo';
+        }
+        if (valorCalculado > 0) {
+            outrosDescontos.push({ codigo: tipoInfo.codigo, descricao: tipoInfo.nome, referencia, valor: valorCalculado });
+        }
+    });
+    const totalDescontos = outrosDescontos.reduce((sum, d) => sum + d.valor, 0);
+    const salarioLiquido = salarioBruto - totalDescontos;
+    app.dadosCalculados = { salarioBruto, dependentes, descontos: outrosDescontos, totalDescontos, salarioLiquido, inssValor, irpfValor };
+    let html = '<div class="result-item"><span>Salário Bruto:</span><span>' + formatarMoeda(salarioBruto) + '</span></div>';
+    outrosDescontos.forEach(d => {
+        html += '<div class="result-item"><span>' + d.descricao + ' (' + d.referencia + '):</span><span>- ' + formatarMoeda(d.valor) + '</span></div>';
+    });
+    html += '<div class="result-item total"><span>Salário Líquido:</span><span>' + formatarMoeda(salarioLiquido) + '</span></div>';
+    document.getElementById('resultadoCalculo').innerHTML = html;
+    document.getElementById('resultado').style.display = 'block';
+}
+
+function gerarRecibo() {
+    if (!app.dadosCalculados.salarioBruto) {
+        alert('Calcule o pró-labore primeiro!');
+        return;
+    }
+    const empresa = document.getElementById('nomeEmpresa').value;
+    const cnpj = document.getElementById('cnpj').value;
+    const colaborador = document.getElementById('nomeColaborador').value;
+    const pis = document.getElementById('pis').value;
+    const cbo = document.getElementById('cbo').value;
+    const admissao = document.getElementById('dataAdmissao').value;
+    
+    if (!empresa || !cnpj || !colaborador) {
+        alert('Preencha todos os dados obrigatórios!');
+        return;
+    }
+    
+    const hoje = new Date();
+    const mesAno = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    document.getElementById('reciboMesAno').textContent = mesAno.toUpperCase();
+    document.getElementById('reciboEmpresa').textContent = empresa;
+    document.getElementById('reciboCNPJ').textContent = cnpj;
+    document.getElementById('reciboColaborador').textContent = colaborador;
+    document.getElementById('reciboPIS').textContent = pis;
+    document.getElementById('reciboCBO').textContent = cbo;
+    document.getElementById('reciboAdmissao').textContent = admissao ? new Date(admissao + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    document.getElementById('reciboData').textContent = hoje.toLocaleDateString('pt-BR');
+    
+    let tabelaHTML = '<tr><td>001</td><td>Pró-Labore</td><td>Mensal</td><td class="valor">' + formatarMoeda(app.dadosCalculados.salarioBruto) + '</td><td class="valor">-</td></tr>';
+    app.dadosCalculados.descontos.forEach(d => {
+        tabelaHTML += '<tr><td>' + d.codigo + '</td><td>' + d.descricao + '</td><td>' + d.referencia + '</td><td class="valor">-</td><td class="valor">' + formatarMoeda(d.valor) + '</td></tr>';
+    });
+    tabelaHTML += '<tr class="recibo-total"><td colspan="3" style="text-align: right;">TOTAL LÍQUIDO</td><td class="valor">' + formatarMoeda(app.dadosCalculados.salarioBruto) + '</td><td class="valor">' + formatarMoeda(app.dadosCalculados.totalDescontos) + '</td></tr>';
+    tabelaHTML += '<tr class="recibo-total"><td colspan="3" style="text-align: right; font-size: 14px;">VALOR LÍQUIDO A RECEBER</td><td colspan="2" class="valor" style="font-size: 14px;">' + formatarMoeda(app.dadosCalculados.salarioLiquido) + '</td></tr>';
+    document.getElementById('reciboTabela').innerHTML = tabelaHTML;
+    
+    const baseIRPF = app.dadosCalculados.salarioBruto - app.dadosCalculados.inssValor;
+    const fgts = app.dadosCalculados.salarioBruto * 0.08;
+    document.getElementById('reciboSalarioBase').textContent = formatarMoeda(app.dadosCalculados.salarioBruto);
+    document.getElementById('reciboSalarioINSS').textContent = formatarMoeda(app.dadosCalculados.salarioBruto);
+    document.getElementById('reciboDependentes').textContent = app.dadosCalculados.dependentes;
+    document.getElementById('reciboBaseIRPF').textContent = formatarMoeda(baseIRPF);
+    document.getElementById('reciboFGTS').textContent = formatarMoeda(fgts);
+    document.getElementById('reciboSalarioFGTS').textContent = formatarMoeda(app.dadosCalculados.salarioBruto);
+    
+    document.getElementById('recibo').style.display = 'block';
+    setTimeout(() => document.getElementById('recibo').scrollIntoView({ behavior: 'smooth' }), 100);
+}
+
+function imprimir() {
+    if (document.getElementById('recibo').style.display === 'none') {
+        alert('Gere o recibo primeiro!');
+        return;
+    }
+    window.print();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('btnAddDesconto').addEventListener('click', adicionarDesconto);
+    document.getElementById('btnCalcular').addEventListener('click', calcular);
+    document.getElementById('btnGerarRecibo').addEventListener('click', gerarRecibo);
+    document.getElementById('btnImprimir').addEventListener('click', imprimir);
+    renderizarDescontos();
+});
+    </script>
+</body>
+</html>
